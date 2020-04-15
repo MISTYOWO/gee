@@ -36,5 +36,4 @@ func TestGetRouter(t *testing.T) {
 	if ps["name"] != "geekutu" {
 		t.Fatal("should be geekutu")
 	}
-
 }

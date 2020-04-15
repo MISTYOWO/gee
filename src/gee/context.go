@@ -15,6 +15,9 @@ type Context struct {
 	Method     string
 	Params     map[string]string
 	StatusCode int
+	handlers   []HandlerFunc
+	id         int
+	engine     *Engine
 }
 
 func NewContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -23,6 +26,7 @@ func NewContext(w http.ResponseWriter, req *http.Request) *Context {
 		Req:    req,
 		Path:   req.URL.Path,
 		Method: req.Method,
+		id:     -1,
 	}
 }
 func (context *Context) Param(key string) string {
@@ -60,8 +64,27 @@ func (context *Context) Date(code int, data []byte) {
 	context.SetStatus(code)
 	context.Writer.Write(data)
 }
-func (context *Context) Html(code int, html string) {
+
+// func (context *Context) Html(code int, html string) {
+// 	context.SetHeader("Content-Type", "text/html")
+// 	context.SetStatus(code)
+// 	context.Writer.Write([]byte(html))
+// }
+
+func (context *Context) Html(code int, name string, data interface{}) {
 	context.SetHeader("Content-Type", "text/html")
 	context.SetStatus(code)
-	context.Writer.Write([]byte(html))
+	if err := context.engine.httpTemplates.ExecuteTemplate(context.Writer, name, data); err != nil {
+		context.SetStatus(http.StatusNotFound)
+		//not sure
+		context.Writer.Write()
+	}
+}
+
+func (context *Context) Next() {
+	context.id++
+	for context.id < len(context.handlers) {
+		context.handlers[context.id](context)
+		context.id++
+	}
 }
